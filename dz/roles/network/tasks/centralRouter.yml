@@ -1,0 +1,42 @@
+---
+# tasks file for roles/network
+
+- name: Set ip forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    reload: yes
+
+- name: Set DEFROUTE=No
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: '^DEFROUTE='
+    line: DEFROUTE="no"
+  notify:
+    - restart network
+
+- name: GATEWAY
+  lineinfile:
+    dest: /etc/sysconfig/network-scripts/ifcfg-eth1
+    insertafter: 'NETMASK'
+    regexp: '^GATEWAY='
+    line: 'GATEWAY=10.10.0.2'
+    state: present
+  notify:
+    - restart network
+
+- name: route-centralRouter-eth2
+  copy:
+    src: route-centralRouter-eth2
+    dest: /etc/sysconfig/network-scripts/route-eth2
+
+- name: route-centralRouter-eth3
+  copy:
+    src: route-centralRouter-eth3
+    dest: /etc/sysconfig/network-scripts/route-eth3
+
+- name: start network
+  systemd:
+    name: network
+    state: restarted

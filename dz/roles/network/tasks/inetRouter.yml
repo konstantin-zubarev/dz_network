@@ -1,0 +1,36 @@
+---
+# tasks file for roles/network
+
+- name: Set ip forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    reload: yes
+
+- name: Create iptables NAT chain
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    out_interface: 'eth0'
+    jump: MASQUERADE
+    protocol: 'all'
+    state: present
+  notify: save iptables
+
+- name: Auto start iptables NAT
+  lineinfile:
+    path: /etc/rc.d/rc.local
+    regexp: '^/sbin/iptables-restore'
+    line: /sbin/iptables-restore < /etc/sysconfig/iptables
+    mode: '+x'
+
+- name: route-inetRouter
+  copy:
+    src: route-inetRouter
+    dest: /etc/sysconfig/network-scripts/route-eth1
+
+- name: start network
+  systemd:
+    name: network
+    state: restarted
